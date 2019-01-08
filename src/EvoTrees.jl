@@ -11,6 +11,6 @@ export grow_tree!, grow_gbtree, Tree, Node, Params, predict
 include("struct.jl")
 include("loss.jl")
 include("predict.jl")
-include("tree_vector.jl")
+include("tree_recursive.jl")
 
 end # module
