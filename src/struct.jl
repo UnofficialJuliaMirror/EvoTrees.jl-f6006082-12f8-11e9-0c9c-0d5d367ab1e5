@@ -7,18 +7,15 @@ struct TrainData{T<:AbstractFloat}
     X::Matrix{T}
     X_permsort::Matrix{T}
     Y::Matrix{T}
-    δ::Vector{T}
-    δ²::Vector{T}
+    δ::Matrix{T}
     𝑤::Vector{T}
 end
 
 mutable struct SplitInfo{T<:AbstractFloat, S<:Int}
     gain::T
-    ∑δL::T
-    ∑δ²L::T
+    ∑δL::Vector{T}
     ∑𝑤L::T
-    ∑δR::T
-    ∑δ²R::T
+    ∑δR::Vector{T}
     ∑𝑤R::T
     gainL::T
     gainR::T
@@ -28,11 +25,9 @@ mutable struct SplitInfo{T<:AbstractFloat, S<:Int}
 end
 
 mutable struct SplitTrack{T<:AbstractFloat}
-    ∑δL::T
-    ∑δ²L::T
+    ∑δL::Vector{T}
     ∑𝑤L::T
-    ∑δR::T
-    ∑δ²R::T
+    ∑δR::Vector{T}
     ∑𝑤R::T
     gainL::T
     gainR::T
@@ -66,8 +61,7 @@ end
 # single tree is made of a root node that containes nested nodes and leafs
 struct TrainNode{T<:AbstractFloat, I<:AbstractArray{Int, 1}, J<:AbstractArray{Int, 1}, S<:Int}
     depth::S
-    ∑δ::T
-    ∑δ²::T
+    ∑δ::Vector{T}
     ∑𝑤::T
     gain::T
     𝑖::I

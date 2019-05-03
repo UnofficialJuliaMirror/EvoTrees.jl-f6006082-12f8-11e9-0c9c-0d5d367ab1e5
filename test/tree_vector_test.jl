@@ -52,42 +52,42 @@ rowsample = 1.0
 colsample = 1.0
 
 # params1 = Params(nrounds, λ, γ, η, max_depth, min_weight, :linear)
-params1 = Params(:linear, 1, λ, γ, 1.0, 2, min_weight, rowsample, colsample)
+params1 = Params(:linear, 1, λ, γ, 1.0, max_depth, min_weight, rowsample, colsample)
 
 # initial info
-δ, δ² = zeros(size(X, 1)), zeros(size(X, 1))
+δ = zeros(size(X, 1), 2)
 𝑤 = ones(size(X, 1))
 pred = zeros(size(Y, 1))
 # @time update_grads!(Val{params1.loss}(), pred, Y, δ, δ²)
-update_grads!(Val{params1.loss}(), pred, Y, δ, δ², 𝑤)
-∑δ, ∑δ², ∑𝑤 = sum(δ), sum(δ²), sum(𝑤)
+@time update_grads!(Val{params1.loss}(), pred, Y, δ, 𝑤)
+∑δ, ∑𝑤 = vec(sum(δ, dims = 1)), sum(𝑤)
 
-gain = get_gain(∑δ, ∑δ², ∑𝑤, params1.λ)
+gain = get_gain(∑δ, ∑𝑤, params1.λ)
 
 # initialize train_nodes
 train_nodes = Vector{TrainNode{Float64, Array{Int64,1}, Array{Int64, 1}, Int}}(undef, 2^params1.max_depth-1)
 for feat in 1:2^params1.max_depth-1
-    train_nodes[feat] = TrainNode(0, -Inf, -Inf, -Inf, -Inf, [0], [0])
+    train_nodes[feat] = TrainNode(0, [0.0, 0.0], -Inf, -Inf, [0], [0])
 end
 # initializde node splits info and tracks - colsample size (𝑗)
 splits = Vector{SplitInfo{Float64, Int}}(undef, size(𝑗, 1))
 for feat in 1:size(𝑗, 1)
-    splits[feat] = SplitInfo{Float64, Int}(-Inf, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -Inf, -Inf, 0, 0, 0.0)
+    splits[feat] = SplitInfo{Float64, Int}(-Inf, [0.0, 0.0], 0.0, [0.0, 0.0], 0.0, -Inf, -Inf, 0, 0, 0.0)
 end
 tracks = Vector{SplitTrack{Float64}}(undef, size(𝑗, 1))
 for feat in 1:size(𝑗, 1)
-    tracks[feat] = SplitTrack{Float64}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -Inf, -Inf, -Inf)
+    tracks[feat] = SplitTrack{Float64}([0.0, 0.0], 0.0, [0.0, 0.0], 0.0, -Inf, -Inf, -Inf)
 end
 
-root = TrainNode(1, ∑δ, ∑δ², ∑𝑤, gain, 𝑖, 𝑗)
+root = TrainNode(1, ∑δ, ∑𝑤, gain, 𝑖, 𝑗)
 train_nodes[1] = root
 
 tree = [TreeNode(1.3)]
 Tree(tree)
 tree = Vector{TreeNode{Float64, Int, Bool}}()
 
-@time tree = grow_tree(X, δ, δ², 𝑤, params1, perm_ini, train_nodes, splits, tracks)
-@code_warntype grow_tree(X, δ, δ², 𝑤, params1, perm_ini, train_nodes, splits, tracks)
+@time tree = grow_tree(X, δ, 𝑤, params1, perm_ini, train_nodes, splits, tracks)
+@code_warntype grow_tree(X, δ, 𝑤, params1, perm_ini, train_nodes, splits, tracks)
 
 # predict - map a sample to tree-leaf prediction
 # @time pred = predict(tree, X)
