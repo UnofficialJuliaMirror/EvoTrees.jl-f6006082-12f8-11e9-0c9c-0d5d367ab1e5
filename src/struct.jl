@@ -151,7 +151,7 @@ end
 # eval metric tracking
 struct Metric
     iter::Vector{Int}
-    metric::Vector{Float64}
+    metric::Vector{Float32}
 end
 Metric() = Metric([0], [Inf])
 

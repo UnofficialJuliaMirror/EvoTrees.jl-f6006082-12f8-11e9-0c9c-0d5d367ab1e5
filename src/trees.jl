@@ -74,7 +74,7 @@ function grow_gbtree(X::AbstractArray{R, 2}, Y::AbstractVector{S}, params::EvoTr
     end
 
     # initialize preds
-    pred = zeros(SVector{params.K,Float64}, size(X,1))
+    pred = zeros(SVector{params.K,Float}, size(X,1))
     for i in eachindex(pred)
         pred[i] += μ
     end
@@ -82,14 +82,14 @@ function grow_gbtree(X::AbstractArray{R, 2}, Y::AbstractVector{S}, params::EvoTr
     # eval init
     if size(Y_eval, 1) > 0
         # pred_eval = ones(size(Y_eval, 1), params.K) .* μ'
-        pred_eval = zeros(SVector{params.K,Float64}, size(X_eval,1))
+        pred_eval = zeros(SVector{params.K,Float32}, size(X_eval,1))
         for i in eachindex(pred_eval)
             pred_eval[i] += μ
         end
     end
 
-    # bias = Tree([TreeNode(SVector{1, Float64}(μ))])
-    bias = Tree([TreeNode(SVector{params.K,Float64}(μ))])
+    # bias = Tree([TreeNode(SVector{1, Float32}(μ))])
+    bias = Tree([TreeNode(SVector{params.K,Float32}(μ))])
     gbtree = GBTree([bias], params, Metric())
 
     X_size = size(X)
@@ -97,8 +97,8 @@ function grow_gbtree(X::AbstractArray{R, 2}, Y::AbstractVector{S}, params::EvoTr
     𝑗_ = collect(1:X_size[2])
 
     # initialize gradients and weights
-    δ, δ² = zeros(SVector{params.K, Float64}, X_size[1]), zeros(SVector{params.K, Float64}, X_size[1])
-    𝑤 = zeros(SVector{1, Float64}, X_size[1]) .+ 1
+    δ, δ² = zeros(SVector{params.K, Float32}, X_size[1]), zeros(SVector{params.K, Float32}, X_size[1])
+    𝑤 = zeros(SVector{1, Float32}, X_size[1]) .+ 1
 
     edges = get_edges(X, params.nbins)
     X_bin = binarize(X, edges)
@@ -108,21 +108,21 @@ function grow_gbtree(X::AbstractArray{R, 2}, Y::AbstractVector{S}, params::EvoTr
     end
 
     # initialize train nodes
-    train_nodes = Vector{TrainNode{params.K, Float64, BitSet, Array{Int64, 1}, Int64}}(undef, 2^params.max_depth-1)
+    train_nodes = Vector{TrainNode{params.K, Float32, BitSet, Array{Int64, 1}, Int64}}(undef, 2^params.max_depth-1)
     for node in 1:2^params.max_depth-1
-        train_nodes[node] = TrainNode(0, SVector{params.K, Float64}(fill(-Inf, params.K)), SVector{params.K, Float64}(fill(-Inf, params.K)), SVector{1, Float64}(fill(-Inf, 1)), -Inf, BitSet([0]), [0])
+        train_nodes[node] = TrainNode(0, SVector{params.K, Float32}(fill(-Inf, params.K)), SVector{params.K, Float32}(fill(-Inf, params.K)), SVector{1, Float32}(fill(-Inf, 1)), -Inf, BitSet([0]), [0])
     end
 
     # initializde node splits info and tracks - colsample size (𝑗)
-    splits = Vector{SplitInfo{params.K, Float64, Int64}}(undef, X_size[2])
-    hist_δ = Vector{Vector{SVector{params.K, Float64}}}(undef, X_size[2])
-    hist_δ² = Vector{Vector{SVector{params.K, Float64}}}(undef, X_size[2])
-    hist_𝑤 = Vector{Vector{SVector{1, Float64}}}(undef, X_size[2])
+    splits = Vector{SplitInfo{params.K, Float32, Int64}}(undef, X_size[2])
+    hist_δ = Vector{Vector{SVector{params.K, Float32}}}(undef, X_size[2])
+    hist_δ² = Vector{Vector{SVector{params.K, Float32}}}(undef, X_size[2])
+    hist_𝑤 = Vector{Vector{SVector{1, Float32}}}(undef, X_size[2])
     for feat in 𝑗_
-        splits[feat] = SplitInfo{params.K, Float64, Int}(-Inf, SVector{params.K, Float64}(zeros(params.K)), SVector{params.K, Float64}(zeros(params.K)), SVector{1, Float64}(zeros(1)), SVector{params.K, Float64}(zeros(params.K)), SVector{params.K, Float64}(zeros(params.K)), SVector{1, Float64}(zeros(1)), -Inf, -Inf, 0, feat, 0.0)
-        hist_δ[feat] = zeros(SVector{params.K, Float64}, length(bags[feat]))
-        hist_δ²[feat] = zeros(SVector{params.K, Float64}, length(bags[feat]))
-        hist_𝑤[feat] = zeros(SVector{1, Float64}, length(bags[feat]))
+        splits[feat] = SplitInfo{params.K, Float32, Int}(-Inf, SVector{params.K, Float32}(zeros(params.K)), SVector{params.K, Float32}(zeros(params.K)), SVector{1, Float32}(zeros(1)), SVector{params.K, Float32}(zeros(params.K)), SVector{params.K, Float32}(zeros(params.K)), SVector{1, Float32}(zeros(1)), -Inf, -Inf, 0, feat, 0.0)
+        hist_δ[feat] = zeros(SVector{params.K, Float32}, length(bags[feat]))
+        hist_δ²[feat] = zeros(SVector{params.K, Float32}, length(bags[feat]))
+        hist_𝑤[feat] = zeros(SVector{1, Float32}, length(bags[feat]))
     end
 
     # initialize metric
@@ -199,17 +199,17 @@ function grow_gbtree!(model::GBTree, X::AbstractArray{R, 2}, Y::AbstractVector{S
     seed!(params.seed)
 
     # initialize predictions - efficiency to be improved
-    pred = zeros(SVector{params.K,Float64}, size(X,1))
+    pred = zeros(SVector{params.K,Float32}, size(X,1))
     pred_ = predict(model, X)
     for i in eachindex(pred)
-        pred[i] = SVector{params.K,Float64}(pred_[i])
+        pred[i] = SVector{params.K,Float32}(pred_[i])
     end
     # eval init
     if size(Y_eval, 1) > 0
-        pred_eval = zeros(SVector{params.K,Float64}, size(X_eval,1))
+        pred_eval = zeros(SVector{params.K,Float32}, size(X_eval,1))
         pred_eval_ = predict(model, X_eval)
         for i in eachindex(pred_eval)
-            pred_eval[i] = SVector{params.K,Float64}(pred_eval_[i])
+            pred_eval[i] = SVector{params.K,Float32}(pred_eval_[i])
         end
     end
 
@@ -218,8 +218,8 @@ function grow_gbtree!(model::GBTree, X::AbstractArray{R, 2}, Y::AbstractVector{S
     𝑗_ = collect(1:X_size[2])
 
     # initialize gradients and weights
-    δ, δ² = zeros(SVector{params.K, Float64}, X_size[1]), zeros(SVector{params.K, Float64}, X_size[1])
-    𝑤 = zeros(SVector{1, Float64}, X_size[1]) .+ 1
+    δ, δ² = zeros(SVector{params.K, Float32}, X_size[1]), zeros(SVector{params.K, Float32}, X_size[1])
+    𝑤 = zeros(SVector{1, Float32}, X_size[1]) .+ 1
 
     edges = get_edges(X, params.nbins)
     X_bin = binarize(X, edges)
@@ -229,21 +229,21 @@ function grow_gbtree!(model::GBTree, X::AbstractArray{R, 2}, Y::AbstractVector{S
     end
 
     # initialize train nodes
-    train_nodes = Vector{TrainNode{params.K, Float64, BitSet, Array{Int64, 1}, Int64}}(undef, 2^params.max_depth-1)
+    train_nodes = Vector{TrainNode{params.K, Float32, BitSet, Array{Int64, 1}, Int64}}(undef, 2^params.max_depth-1)
     for node in 1:2^params.max_depth-1
-        train_nodes[node] = TrainNode(0, SVector{params.K, Float64}(fill(-Inf, params.K)), SVector{params.K, Float64}(fill(-Inf, params.K)), SVector{1, Float64}(fill(-Inf, 1)), -Inf, BitSet([0]), [0])
+        train_nodes[node] = TrainNode(0, SVector{params.K, Float32}(fill(-Inf, params.K)), SVector{params.K, Float32}(fill(-Inf, params.K)), SVector{1, Float32}(fill(-Inf, 1)), -Inf, BitSet([0]), [0])
     end
 
     # initializde node splits info and tracks - colsample size (𝑗)
-    splits = Vector{SplitInfo{params.K, Float64, Int64}}(undef, X_size[2])
-    hist_δ = Vector{Vector{SVector{params.K, Float64}}}(undef, X_size[2])
-    hist_δ² = Vector{Vector{SVector{params.K, Float64}}}(undef, X_size[2])
-    hist_𝑤 = Vector{Vector{SVector{1, Float64}}}(undef, X_size[2])
+    splits = Vector{SplitInfo{params.K, Float32, Int64}}(undef, X_size[2])
+    hist_δ = Vector{Vector{SVector{params.K, Float32}}}(undef, X_size[2])
+    hist_δ² = Vector{Vector{SVector{params.K, Float32}}}(undef, X_size[2])
+    hist_𝑤 = Vector{Vector{SVector{1, Float32}}}(undef, X_size[2])
     for feat in 𝑗_
-        splits[feat] = SplitInfo{params.K, Float64, Int}(-Inf, SVector{params.K, Float64}(zeros(params.K)), SVector{params.K, Float64}(zeros(params.K)), SVector{1, Float64}(zeros(1)), SVector{params.K, Float64}(zeros(params.K)), SVector{params.K, Float64}(zeros(params.K)), SVector{1, Float64}(zeros(1)), -Inf, -Inf, 0, feat, 0.0)
-        hist_δ[feat] = zeros(SVector{params.K, Float64}, length(bags[feat]))
-        hist_δ²[feat] = zeros(SVector{params.K, Float64}, length(bags[feat]))
-        hist_𝑤[feat] = zeros(SVector{1, Float64}, length(bags[feat]))
+        splits[feat] = SplitInfo{params.K, Float32, Int}(-Inf, SVector{params.K, Float32}(zeros(params.K)), SVector{params.K, Float32}(zeros(params.K)), SVector{1, Float32}(zeros(1)), SVector{params.K, Float32}(zeros(params.K)), SVector{params.K, Float32}(zeros(params.K)), SVector{1, Float32}(zeros(1)), -Inf, -Inf, 0, feat, 0.0)
+        hist_δ[feat] = zeros(SVector{params.K, Float32}, length(bags[feat]))
+        hist_δ²[feat] = zeros(SVector{params.K, Float32}, length(bags[feat]))
+        hist_𝑤[feat] = zeros(SVector{1, Float32}, length(bags[feat]))
     end
 
     # initialize metric
